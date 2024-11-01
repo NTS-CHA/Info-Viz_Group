@@ -43,12 +43,13 @@
             const year = getYear(month);  // Extract year from month
   
             if (!years[year]) {
-              years[year] = { year: year, Males: 0, Females: 0, Unknown: 0 };
+              years[year] = { year: year, Total: 0, Males: 0, Females: 0, Unknown: 0 };
             }
-  
             years[year].Males += maleData[month] * (ageGroupData[month] / totalData[month]);
             years[year].Females += femaleData[month] * (ageGroupData[month] / totalData[month]);
             years[year].Unknown += (totalData[month] - (maleData[month] + femaleData[month])) * (ageGroupData[month] / totalData[month]);
+            years[year].Total = years[year].Males + years[year].Females + years[year].Unknown;
+
           });
   
           return Object.values(years);  // Convert object to array
@@ -60,8 +61,8 @@
   
         // Define the color scale (for males, females, and unknown)
         const colorScale = d3.scaleOrdinal()
-          .domain(['Males', 'Females', 'Unknown'])
-          .range(['#1f77b4', '#d62728', '#7f7f7f']);  // Blue for males, red for females, grey for unknown
+          .domain(['Total','Males', 'Females', 'Unknown'])
+          .range(['#994257','#1f77b4', '#d62728', '#7f7f7f']);  // Blue for males, red for females, grey for unknown
   
         // Add X and Y axes to the SVG
         const xAxis = svg2.append('g').attr('transform', `translate(0, ${height2})`);
@@ -83,6 +84,10 @@
           yAxis.transition().duration(1000).call(d3.axisLeft(yScale));
   
           // Define line generators for Males, Females, and Unknown
+          const lineTotal = d3.line()
+            .x(d => xScale(d.year))
+            .y(d => yScale(d.Total));
+
           const lineMales = d3.line()
             .x(d => xScale(d.year))
             .y(d => yScale(d.Males));
@@ -122,13 +127,14 @@
           }
   
           // Draw each line with animation
+          drawLine(lineTotal, colorScale('Total'));
           drawLine(lineMales, colorScale('Males'));
           drawLine(lineFemales, colorScale('Females'));
           drawLine(lineUnknown, colorScale('Unknown'));
   
           // Add circles for data points with sequential appearance
           timeSeriesData.forEach((d, index) => {
-            ['Males', 'Females', 'Unknown'].forEach(key => {
+            ['Total','Males', 'Females', 'Unknown'].forEach(key => {
               svg2.append('circle')
                 .attr('class', 'circle')
                 .attr('cx', xScale(d.year))
@@ -145,7 +151,7 @@
         }
   
         // Initial chart load (default to 'Under 15 Years')
-        updateChart('Under 15 Years');
+        updateChart('Total');
   
         // Add event listener for the select box change
         d3.select('#ageGroup').on('change', function () {
@@ -173,45 +179,60 @@
         const legend = svg2.append('g')
           .attr('transform', `translate(${width2 - 150}, ${20})`);  // Position it in the top right corner
   
+        // Total (Dark moderate red)
+        legend.append('rect')
+          .attr('x', 50)
+          .attr('y', -50)
+          .attr('width', 20)
+          .attr('height', 20)
+          .attr('fill', '#994257');  // Dark moderate red color
+  
+        legend.append('text')
+          .attr('x', 80)
+          .attr('y', -35)
+          .text('Total')
+          .attr('alignment-baseline', 'middle');
+
+
         // Male (Blue)
         legend.append('rect')
-          .attr('x', 0)
-          .attr('y', 0)
+          .attr('x', 50)
+          .attr('y', -20)
           .attr('width', 20)
           .attr('height', 20)
           .attr('fill', '#1f77b4');  // Blue color
   
         legend.append('text')
-          .attr('x', 30)
-          .attr('y', 15)
+          .attr('x', 80)
+          .attr('y', -5)
           .text('Males')
           .attr('alignment-baseline', 'middle');
   
         // Female (Red)
         legend.append('rect')
-          .attr('x', 0)
-          .attr('y', 30)
+          .attr('x', 50)
+          .attr('y', 10)
           .attr('width', 20)
           .attr('height', 20)
           .attr('fill', '#d62728');  // Red color for females
   
         legend.append('text')
-          .attr('x', 30)
-          .attr('y', 45)
+          .attr('x', 80)
+          .attr('y', 25)
           .text('Females')
           .attr('alignment-baseline', 'middle');
   
         // Unknown (Grey)
         legend.append('rect')
-          .attr('x', 0)
-          .attr('y', 60)
+          .attr('x', 50)
+          .attr('y', 40)
           .attr('width', 20)
           .attr('height', 20)
           .attr('fill', '#7f7f7f');  // Grey color for unknown
   
         legend.append('text')
-          .attr('x', 30)
-          .attr('y', 75)
+          .attr('x', 80)
+          .attr('y', 55)
           .text('Unknown')
           .attr('alignment-baseline', 'middle');
   
